@@ -1,13 +1,24 @@
 import random
 import utils
 
+def tuple2edge(x):
+    return ScenarioEdge(x[0], x[1])
+
 class ScenarioNode:
     def __init__(self, node_id, layer):
-        self.id = node_id
+        self.node_id = node_id
         self.layer = layer
 
     def __str__(self):
-        return "node_%d_%d" % (self.layer, self.id)
+        return "node_%d_%d" % (self.layer, self.node_id)
+
+class ScenarioEdge:
+    def __init__(self, node_from, node_to):
+        self.node_from = node_from
+        self.node_to   = node_to
+
+    def __str__(self):
+        return "%s -> %s" % (self.node_from, self.node_to)
         
 class Scenario:
     def __init__(self, max_beginnings, max_endings, layer_count, max_layer_width, diversity_factor):
@@ -37,7 +48,7 @@ class Scenario:
             next_node_id += node_count
 
             # TODO: Fix magic value
-            self.edges = self.edges.union(set(utils.erode_subgraph_of(previous_layer, nodes_to_add, False, diversity_factor)))
+            self.edges = self.edges.union(tuple2edge(i) for i in set(utils.erode_subgraph_of(previous_layer, nodes_to_add, False, diversity_factor)))
 
             # Update previous_layer
             previous_layer = nodes_to_add
@@ -46,7 +57,7 @@ class Scenario:
 
         # Finally connect last layer to endings
         # TODO: Fix magic value
-        self.edges = self.edges.union(set(utils.erode_subgraph_of(previous_layer, self.endings, True, diversity_factor)))
+        self.edges = self.edges.union(tuple2edge(i) for i in set(utils.erode_subgraph_of(previous_layer, self.endings, True, diversity_factor)))
 
         self.layers.append(self.endings)
 
@@ -59,7 +70,7 @@ class Scenario:
             s += " ".join(str(node) for node in layer)
             s += ";}\n"
 
-        s += "\n".join("    %s -> %s;" % edge for edge in self.edges)
+        s += "\n".join("    %s;" % edge for edge in self.edges)
         s += "\n}\n"
         return s
         
