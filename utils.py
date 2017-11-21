@@ -16,8 +16,12 @@ def iteration_subgraph_of(previous_layer, new_layer, is_end_layer):
 def is_in_graph_from(element, graph):
     return element in set(edge[0] for edge in graph)
 
-def is_in_graph_to(element, graph):
-    return element in set(edge[1] for edge in graph)
+def exists_path_from_old_layer_to(old_layer, node, unremovable_edges, attempt_graph):
+    for old_node in old_layer:
+        edge = (old_node, node)
+        if edge in unremovable_edges or edge in attempt_graph:
+            return True
+    return False
 
 def erode_subgraph_of(previous_layer, new_layer, is_end_layer, diversity_factor):
     graph = iteration_subgraph_of(previous_layer, new_layer, is_end_layer)
@@ -27,7 +31,8 @@ def erode_subgraph_of(previous_layer, new_layer, is_end_layer, diversity_factor)
 
     max_edges_to_remove = int(math.ceil((1. - diversity_factor) * len(graph)))
 
-    for i in range(max_edges_to_remove):
+    i = 0
+    while i < max_edges_to_remove and len(graph) > 0:
         # Copy graph without head
         attempt_graph = list(graph)[1:]
         attempt_graph.extend(unremovable_edges)
@@ -40,28 +45,19 @@ def erode_subgraph_of(previous_layer, new_layer, is_end_layer, diversity_factor)
                 break
 
         if accept:
-            # If removing the first edge makes a node from new_layer unreachable, then accept = False
+            # If removing the first edge makes a node from new_layer unreachable from all previous_layer nodes then accept = False
             for node_to in new_layer:
-                if not is_in_graph_to(node_to, attempt_graph):
+                if not exists_path_from_old_layer_to(previous_layer, node_to, unremovable_edges, attempt_graph):
                     accept = False
                     break
 
         if not accept:
             unremovable_edges.append(graph[0])
+        else:
+            i += 1
 
         # Regardless of edge being unremovable, pop head
         graph = graph[1:]
-
-    # /!\ At this point there might be edges from previous_layer nodes to
-    # new_layer nodes that are removed but the subgraph is still valid since
-    # All nodes from new_layer are guaranteed to be reachable.
-    # For instance:
-    #   0_0 -> 1_1
-    #   1_1 -> 1_2
-    # Here 1_2 is not connected to any node from layer 0, but it is reachable
-    # from another node so it is still valid.
-    # As a result this situation would create a "sublayer" but it does not break
-    # the scenario.
 
     # Finally add unremovable edges back
     graph.extend(unremovable_edges)

@@ -47,7 +47,6 @@ class Scenario:
             nodes_to_add  = set(ScenarioNode(next_node_id + i, layer + 1) for i in range(node_count))
             next_node_id += node_count
 
-            # TODO: Fix magic value
             self.edges = self.edges.union(tuple2edge(i) for i in set(utils.erode_subgraph_of(previous_layer, nodes_to_add, False, diversity_factor)))
 
             # Update previous_layer
@@ -56,7 +55,6 @@ class Scenario:
             self.layers.append(nodes_to_add)
 
         # Finally connect last layer to endings
-        # TODO: Fix magic value
         self.edges = self.edges.union(tuple2edge(i) for i in set(utils.erode_subgraph_of(previous_layer, self.endings, True, diversity_factor)))
 
         self.layers.append(self.endings)
