@@ -9,8 +9,8 @@ def iteration_subgraph_of(previous_layer, new_layer, is_end_layer):
     ret = list((i, j) for j in new_layer for i in previous_layer)
 
     if not is_end_layer:
-        # Then, all edges between new_layer nodes
-        ret.extend(list((new_layer[i], new_layer[j]) for i in range(len(new_layer)) for j in range(len(new_layer)) if i != j))
+        # Then, half edges between new_layer nodes, so that there cannot be any cycle
+        ret.extend(list((new_layer[i], new_layer[j]) for i in range(len(new_layer)) for j in range(i+1, len(new_layer))))
     return ret
 
 def is_in_graph_from(element, graph):
