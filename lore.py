@@ -1,5 +1,5 @@
 import random
-import enum
+import quest
 
 def generate_syllable():
     vowels     = list("aeiouy")
@@ -10,16 +10,6 @@ def generate_syllable():
 
     return vowels[0] + consonants[0]
 
-class QuestType(enum.IntEnum):
-    GO_TO    = 0
-    FIGHT_NPC = 1
-
-class Quest:
-    def __init__(self, quest_type, involved_entities, disables_entities):
-        self.quest_type = quest_type
-        self.involved_entities = involved_entities
-        self.disables_entities = disables_entities
-
 class Lore:
     def __init__(self):
         self.villages = set()
@@ -29,7 +19,7 @@ class Lore:
     def create_quest(self, is_unmissable, distinct_from, compatible_with):
         if is_unmissable:
             # Create a new village and create a new quest that consists in going to this village
-            return Quest(QuestType.GO_TO, {self.create_village()}, set())
+            return quest.QuestGoTo(self.create_village())
 
         # Otherwise, create a "fight" quest 
         disabled_entities = set(npc for edge in compatible_with for npc in edge.quest.disables_entities)
@@ -37,11 +27,10 @@ class Lore:
         # If at least one NPC is available, do not create a new one
         if len(available_npcs_to_fight) > 0:
             npc = random.choice(tuple(self.npcs))
-            return Quest(QuestType.FIGHT_NPC, {npc}, {npc})
+            return quest.QuestFight(npc)
         # Otherwise, create a new npc
         npc = self.create_npc()
-        return Quest(QuestType.FIGHT_NPC, {npc}, {npc})
-
+        return quest.QuestFight(npc)
     
     def create_village(self):
         count = random.randint(1, 4)
@@ -50,7 +39,7 @@ class Lore:
         name = "".join(generate_syllable() for i in range(count)).title()
         while name in self.villages:
             name = "".join(generate_syllable() for i in range(count)).title()
-        self.npcs |= {name}
+        self.villages |= {name}
         return name
 
     def create_npc(self):

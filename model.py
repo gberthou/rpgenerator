@@ -53,7 +53,7 @@ class ScenarioEdge:
         return False
 
     def __str__(self):
-        return "%s -> %s" % (self.node_from, self.node_to)
+        return "%s -> %s [label=\"%s\"]" % (self.node_from, self.node_to, self.quest)
 
 class Scenario:
     def __init__(self, lore, max_beginnings, max_endings, layer_count, max_layer_width, diversity_factor):
