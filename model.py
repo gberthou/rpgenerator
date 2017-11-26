@@ -16,12 +16,49 @@ class ScenarioEdge:
     def __init__(self, node_from, node_to):
         self.node_from = node_from
         self.node_to   = node_to
+        self.quest     = None
+
+    def is_unmissable(self, edgeset):
+        for e in edgeset - {self}:
+            if e.node_from == self.node_from:
+                return False
+        return True
+
+    def must_be_distinct_from_list(self, edgeset):
+        return [e for e in edgeset - {self} if e.node_from == self.node_from]
+
+    def must_be_compatible_with_list(self, edgeset):
+        return [e for e in edgeset - {self} if e.precedes_edge(self, edgeset)]
+
+    def precedes_edge(self, edge, edgeset):
+        if self.node_to == edge.node_from:
+            return True
+
+        open_nodes = {self.node_to}
+        edgeset = edgeset- {self}
+        while len(edgeset) > 0:
+            # subset = all edges that come from any node from open_nodes
+            subset = set(e for e in edgeset if e.node_from in open_nodes)
+            # If there is no such edge, dead end => self does not precede edge
+            if len(subset) == 0:
+                return False
+
+            # New open_nodes value = all nodes that are reachable using edges in susbet
+            open_nodes = set(e.node_to for e in subset)
+            # If the origin of edge is reachable from edges in subset, then self precedes edge
+            if edge.node_from in open_nodes:
+                return True
+            # Remove considered edges
+            edgeset = edgeset - subset
+        return False
 
     def __str__(self):
         return "%s -> %s" % (self.node_from, self.node_to)
-        
+
 class Scenario:
-    def __init__(self, max_beginnings, max_endings, layer_count, max_layer_width, diversity_factor):
+    def __init__(self, lore, max_beginnings, max_endings, layer_count, max_layer_width, diversity_factor):
+        self.lore = lore
+
         self.beginning_count = random.randint(1, max_beginnings)
         self.ending_count    = random.randint(1, max_endings)
 
@@ -59,6 +96,20 @@ class Scenario:
 
         self.layers.append(self.endings)
 
+        self.build_quests()
+
+    def build_quests(self):
+        for edge in self.edges:
+            is_unmissable   = edge.is_unmissable(self.edges)
+            distinct_from   = list(e for e in edge.must_be_distinct_from_list(self.edges) if e.quest != None)
+            compatible_with = list(e for e in edge.must_be_compatible_with_list(self.edges) if e.quest != None)
+
+            # Call user-defined constraint solver and put the result in the quest field of the current edge
+            quest = self.lore.create_quest(is_unmissable, distinct_from, compatible_with)
+            if quest == None:
+                raise Exception("Lore: create_quest cannot return None")
+            edge.quest = quest
+
     def to_dot_format(self):
         s  = "digraph {\n"
         s += "    graph[compound=true];\n\n"
@@ -71,4 +122,4 @@ class Scenario:
         s += "\n".join("    %s;" % edge for edge in self.edges)
         s += "\n}\n"
         return s
-        
+

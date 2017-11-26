@@ -1,5 +1,9 @@
 import model
+import lore
 
-scenario = model.Scenario(2, 2, 4, 5, .3)
-print(scenario.to_dot_format())
+my_lore = lore.Lore()
+my_scenario = model.Scenario(my_lore, 2, 2, 4, 5, .5)
+print(my_scenario.to_dot_format())
 
+print(my_lore.villages)
+print(my_lore.npcs)
