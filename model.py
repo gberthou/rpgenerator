@@ -35,7 +35,7 @@ class ScenarioEdge:
             return True
 
         open_nodes = {self.node_to}
-        edgeset = edgeset- {self}
+        edgeset = edgeset - {self}
         while len(edgeset) > 0:
             # subset = all edges that come from any node from open_nodes
             subset = set(e for e in edgeset if e.node_from in open_nodes)
@@ -99,16 +99,26 @@ class Scenario:
         self.build_quests()
 
     def build_quests(self):
-        for edge in self.edges:
-            is_unmissable   = edge.is_unmissable(self.edges)
-            distinct_from   = list(e for e in edge.must_be_distinct_from_list(self.edges) if e.quest != None)
-            compatible_with = list(e for e in edge.must_be_compatible_with_list(self.edges) if e.quest != None)
+        # Edges must be visited from beginnings to endings, in order to keep constraints valid
 
-            # Call user-defined constraint solver and put the result in the quest field of the current edge
-            quest = self.lore.create_quest(is_unmissable, distinct_from, compatible_with)
-            if quest == None:
-                raise Exception("Lore: create_quest cannot return None")
-            edge.quest = quest
+        remaining_edges = set(self.edges)
+        open_nodes = self.beginnings
+
+        while len(remaining_edges) > 0:
+            # subset = all edges that come from any node from open_nodes
+            subset     = set(e for e in remaining_edges if e.node_from in open_nodes)
+            open_nodes = set(e.node_to for e in subset)
+            remaining_edges -= subset
+            for edge in subset:
+                is_unmissable   = edge.is_unmissable(self.edges)
+                distinct_from   = list(e for e in edge.must_be_distinct_from_list(self.edges) if e.quest != None)
+                compatible_with = list(e for e in edge.must_be_compatible_with_list(self.edges) if e.quest != None)
+
+                # Call user-defined constraint solver and put the result in the quest field of the current edge
+                quest = self.lore.create_quest(is_unmissable, distinct_from, compatible_with)
+                if quest == None:
+                    raise Exception("Lore: create_quest cannot return None")
+                edge.quest = quest
 
     def to_dot_format(self):
         s  = "digraph {\n"

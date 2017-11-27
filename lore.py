@@ -17,17 +17,30 @@ class Lore:
         self.items    = set()
 
     def create_quest(self, is_unmissable, distinct_from, compatible_with):
+        # Simple algorithm:
+        # unmissable => Go to new village
+        # missable   => Fight NPC
+
         if is_unmissable:
             # Create a new village and create a new quest that consists in going to this village
             return quest.QuestGoTo(self.create_village())
 
         # Otherwise, create a "fight" quest 
-        disabled_entities = set(npc for edge in compatible_with for npc in edge.quest.disables_entities)
+
+        # Take into account "compatible_with" constraints, i.e., don't use entities that were disabled by preceding edges
+        disabled_entities  = set(npc for edge in compatible_with for npc in edge.quest.disables_entities)
+
+        # Take into account "distinct_from" constraints, i.e., don't target the same npc as other egdes coming from the same node
+        disabled_entities |= set(edge.quest.npc for edge in distinct_from if edge.quest.quest_type == quest.QuestType.FIGHT_NPC)
+
+        # Remove the disabled entities from the set of available npcs
         available_npcs_to_fight = self.npcs - disabled_entities
+
         # If at least one NPC is available, do not create a new one
         if len(available_npcs_to_fight) > 0:
-            npc = random.choice(tuple(self.npcs))
+            npc = random.choice(tuple(available_npcs_to_fight))
             return quest.QuestFight(npc)
+
         # Otherwise, create a new npc
         npc = self.create_npc()
         return quest.QuestFight(npc)
