@@ -133,3 +133,28 @@ class Scenario:
         s += "\n}\n"
         return s
 
+class ScenarioDynamicGraph:
+    def __init__(self, scenario):
+        self.scenario = scenario
+        self.current_node = random.choice(tuple(scenario.beginnings))
+        self.remaining_edges = set(scenario.edges)
+
+    def get_available_edges(self):
+        edges = set(e for e in self.remaining_edges if e.node_from == self.current_node)
+        if len(edges) < 2:
+            return edges, True
+        return edges, False
+
+    def complete_edge(self, edge):
+        edges, _ = self.get_available_edges()
+        self.remaining_edges -= edges
+        self.current_node = edge.node_to
+        return self.get_available_edges()
+
+    def fail_edge(self, edge):
+        self.remaining_edges -= {edge}
+        return self.get_available_edges()
+
+    def is_over(self):
+        edges, _ = self.get_available_edges()
+        return len(edges) > 0
