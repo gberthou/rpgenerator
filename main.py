@@ -1,9 +1,7 @@
-import model
-import lore
+import sys
+from scenariograph import GraphBuilder
 
-my_lore = lore.Lore()
-my_scenario = model.Scenario(my_lore, 2, 2, 4, 5, .5)
-print(my_scenario.to_dot_format())
+gb = GraphBuilder(sys.argv[1])
+graph = gb.build_action_graph("end*")
 
-game = model.ScenarioDynamicGraph(my_scenario)
-print(game.get_available_edges())
+print(graph.to_dot())

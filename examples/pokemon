@@ -1,0 +1,20 @@
+obtain_badge1  -> badge1_obtained
+obtain_badge2  -> badge2_obtained
+obtain_badge3  -> badge3_obtained
+obtain_badge4  -> badge4_obtained
+obtain_badge5  -> badge5_obtained
+obtain_badge6  -> badge6_obtained
+obtain_badge7  -> badge7_obtained
+obtain_badge8  -> badge8_obtained
+beat_league    -> league_beaten
+
+badge1:        badge1_obtained 
+badge2: badge1 badge2_obtained 
+badge3: badge2 badge3_obtained 
+badge4: badge3 badge4_obtained 
+badge5: badge4 badge5_obtained 
+badge6: badge5 badge6_obtained 
+badge7: badge6 badge7_obtained 
+badge8: badge7 badge8_obtained 
+league: badge8
+end*  : league league_beaten
