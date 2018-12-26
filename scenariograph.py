@@ -42,6 +42,19 @@ class Graph:
     def create_edge(self, node_from, node_to, label):
         self.edges |= {Edge(node_from, node_to, label)}
 
+    def remove_useless_edges_and_nodes(self):
+        useless_edges = set(i for i in self.edges if i.label == "")
+        for uedge in useless_edges:
+            incoming_edges = set(i for i in self.edges if i.node_to == uedge.node_from)
+            for iedge in incoming_edges:
+                iedge.node_to = uedge.node_to
+
+        self.nodes -= set(i.node_from for i in useless_edges)
+        self.edges -= useless_edges
+
+    def finalize(self):
+        self.remove_useless_edges_and_nodes()
+
     def to_dot(self):
 
         ret = "digraph g {\n"
