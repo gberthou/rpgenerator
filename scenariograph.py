@@ -15,11 +15,14 @@ class Target:
         self.deps = set(deps)
 
 class Node:
-    def __init__(self, n, deps = set(), initial = False, final = False):
+    def __init__(self, n, initial = False, final = False):
         self.n = n
-        self.deps = deps
+        self.past_actions = set()
         self.isinitial = initial
         self.isfinal = final
+
+    def same_actions_as(self, other):
+        return self.past_actions == other.past_actions
 
 class Edge:
     def __init__(self, node_from, node_to, label):
@@ -27,14 +30,19 @@ class Edge:
         self.node_to   = node_to
         self.label     = label
 
+    def same_as(self, other):
+        return self.node_from == other.node_from and self.node_to == other.node_to and self.label == other.label
+
 class Graph:
     def __init__(self):
         self.nodes = set()
         self.edges = set()
         self.node_id = 0
 
-    def create_node(self, deps = set(), initial = False, final = False):
-        tmp = Node(self.node_id, deps, initial, final)
+        self.initial_nodes = set()
+
+    def create_node(self, initial = False, final = False):
+        tmp = Node(self.node_id, initial, final)
         self.nodes |= {tmp}
         self.node_id += 1
         return tmp
@@ -52,8 +60,49 @@ class Graph:
         self.nodes -= set(i.node_from for i in useless_edges)
         self.edges -= useless_edges
 
+    def annotate_nodes(self, nodes, actions):
+        # TODO: compute and use dominance graph
+
+        for node in nodes:
+            node.past_actions |= actions
+            for edge in self.edges:
+                if edge.node_from == node:
+                    self.annotate_nodes({edge.node_to}, actions | {edge.label})
+
+    def replace_node(self, node_to_replace, node):
+        for edge in self.edges:
+            if edge.node_from == node_to_replace:
+                edge.node_from = node
+            if edge.node_to == node_to_replace:
+                edge.node_to = node
+
+        self.nodes -= {node_to_replace}
+
+    # Nodes must be annotated before (cf. annotate_nodes)
+    def remove_identical_nodes(self):
+        oldnodes = set(self.nodes)
+        for node in oldnodes:
+            if node not in self.nodes:
+                continue
+
+            for other in self.nodes - {node}:
+                if node.same_actions_as(other):
+                    self.replace_node(other, node)
+
+    # Must be called after remove_identical_nodes
+    def remove_identical_edges(self):
+        oldedges = set(self.edges)
+        for edge in oldedges:
+            if edge not in self.edges:
+                continue
+
+            self.edges -= set(i for i in self.edges-{edge} if i.same_as(edge))
+
     def finalize(self):
         self.remove_useless_edges_and_nodes()
+        self.annotate_nodes(self.initial_nodes, set())
+        self.remove_identical_nodes()
+        self.remove_identical_edges()
 
     def to_dot(self):
 
@@ -128,6 +177,8 @@ class GraphBuilder:
         elif len(targets):
             for target in targets:
                 self.rec_action_graph(deps - {target.name}, graph, "", node)
+        else:
+            graph.initial_nodes |= {node}
 
     def build_action_graph(self, name):
         if not name in self.target_names:
