@@ -60,14 +60,16 @@ class Graph:
         self.nodes -= set(i.node_from for i in useless_edges)
         self.edges -= useless_edges
 
-    def annotate_nodes(self, nodes, actions):
+    def rec_annotate_nodes(self, node, actions, ed):
         # TODO: compute and use dominance graph
 
-        for node in nodes:
-            node.past_actions |= actions
-            for edge in self.edges:
+        node.past_actions |= actions
+        try:
+            for edge in ed[node]:
                 if edge.node_from == node:
-                    self.annotate_nodes({edge.node_to}, actions | {edge.label})
+                    self.rec_annotate_nodes(edge.node_to, actions | {edge.label}, ed)
+        except KeyError:
+            pass
 
     def replace_node(self, node_to_replace, node):
         for edge in self.edges:
@@ -100,7 +102,16 @@ class Graph:
 
     def finalize(self):
         self.remove_useless_edges_and_nodes()
-        self.annotate_nodes(self.initial_nodes, set())
+
+        ed = dict()
+        for edge in self.edges:
+            if edge.node_from in ed.keys():
+                ed[edge.node_from] |= {edge}
+            else:
+                ed[edge.node_from] = {edge}
+        for inode in self.initial_nodes:
+            self.rec_annotate_nodes(inode, set(), ed)
+
         self.remove_identical_nodes()
         self.remove_identical_edges()
 
