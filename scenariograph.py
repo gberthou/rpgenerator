@@ -71,25 +71,33 @@ class Graph:
         except KeyError:
             pass
 
-    def replace_node(self, node_to_replace, node):
+    def replace_nodes(self, replacements):
         for edge in self.edges:
-            if edge.node_from == node_to_replace:
-                edge.node_from = node
-            if edge.node_to == node_to_replace:
-                edge.node_to = node
+            try:
+                edge.node_from = replacements[edge.node_from]
+            except KeyError:
+                pass
 
-        self.nodes -= {node_to_replace}
+            try:
+                edge.node_to = replacements[edge.node_to]
+            except KeyError:
+                pass
 
     # Nodes must be annotated before (cf. annotate_nodes)
     def remove_identical_nodes(self):
         oldnodes = set(self.nodes)
+        replacements = dict()
+
         for node in oldnodes:
             if node not in self.nodes:
                 continue
 
-            for other in self.nodes - {node}:
-                if node.same_actions_as(other):
-                    self.replace_node(other, node)
+            nodes_to_remove = set(i for i in self.nodes - {node} if i.same_actions_as(node))
+            for i in nodes_to_remove:
+                replacements[i] = node
+            self.nodes -= nodes_to_remove
+
+        self.replace_nodes(replacements)
 
     # Must be called after remove_identical_nodes
     def remove_identical_edges(self):
